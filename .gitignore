@@ -5,3 +5,6 @@
 # git
 *.rej
 *.orig
+
+# generated files
+/build
