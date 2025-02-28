@@ -4,7 +4,7 @@
 int main()
 {
     // Open the video capture device
-    cv::VideoCapture cap(0);
+    cv::VideoCapture cap("/dev/video0");
 
     if (!cap.isOpened())
     {
@@ -16,6 +16,8 @@ int main()
     int defaultWidth = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_WIDTH));
     int defaultHeight = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_HEIGHT));
     std::cout << "Default Resolution: " << defaultWidth << "x" << defaultHeight << std::endl;
+
+    cap.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
 
     // Try setting the resolution to a higher value if supported
     // Replace 1920 and 1080 with the maximum resolution your camera supports
