@@ -1,0 +1,61 @@
+#!/bin/bash
+set -eu -o pipefail
+app_dir=$(dirname "$(readlink -e "$0")")
+app=$(basename "$0")
+if git status > /dev/null 2>&1
+then
+  vcs_root=$(git rev-parse --show-toplevel 2>/dev/null | xargs dirname)
+else
+  vcs_root=$(dirname "$app_dir")
+fi
+image="$(sed "s%^$vcs_root/%%" <<< "$app_dir" | tr '/.\- &' '_' | tr '[:upper:]' '[:lower:]')_3dsdk"
+
+docker build -t "$image" "$app_dir/docker/"
+
+flags=()
+if tty -s
+then
+  flags+=("-it")
+fi
+
+flags+=(--rm)
+flags+=(--user "$(id -u):$(id -g)")
+flags+=(--volume "$app_dir:/mnt")
+flags+=(--workdir "/mnt")
+
+if [ -n "${SDK_3D_ENABLE_GUI:-}" ]
+then
+  if [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ]
+  then
+    echo "$app: neither X11 (DISPLAY) nor Wayland (WAYLAND_DISPLAY) is available - aborting" >&2
+    exit 2
+  fi
+
+  if [ -n "${DISPLAY:-}" ]
+  then
+    echo "$app: enabling X11 display"
+    flags+=(--env DISPLAY)
+    flags+=(--env QT_X11_NO_MITSHM=1)
+    flags+=(--volume "/tmp/.X11-unix")
+  fi
+
+  if [ -n "${WAYLAND_DISPLAY:-}" ]
+  then
+    echo "$app: enabling Wayland display"
+    flags+=(--env WAYLAND_DISPLAY)
+    flags+=(--env XDG_RUNTIME_DIR)
+    flags+=(--volume "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY:/$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY")
+    flags+=(--env QT_QPA_PLATFORM=wayland)
+  fi
+fi
+
+shopt -s nullglob
+for dev in /dev/video*
+do
+  flags+=(--device "$dev")
+done
+
+docker run \
+  "${flags[@]}" \
+  "$image" \
+  "$@"
