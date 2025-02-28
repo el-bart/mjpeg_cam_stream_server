@@ -1,11 +1,13 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 
-int main() {
+int main()
+{
     // Open the video capture device
     cv::VideoCapture cap(0);
 
-    if (!cap.isOpened()) {
+    if (!cap.isOpened())
+    {
         std::cerr << "Cannot open camera" << std::endl;
         return -1;
     }
@@ -27,23 +29,22 @@ int main() {
 
     // Read frames
     cv::Mat frame;
-    while (true) {
-        if (!cap.read(frame)) {
+    while (true)
+    {
+        if (!cap.read(frame))
             break;
-        }
+        std::cerr << ".";
 
         // Display the frame
         cv::imshow("Frame", frame);
 
         // Exit on key press
-        if (cv::waitKey(1) == 'q') {
+        if (cv::waitKey(1) == 'q')
             break;
-        }
     }
 
+    std::cerr << "\nexiting\n";
     // Release resources
     cap.release();
     cv::destroyAllWindows();
-
-    return 0;
 }
