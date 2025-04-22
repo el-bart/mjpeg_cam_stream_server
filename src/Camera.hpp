@@ -7,8 +7,9 @@ struct Camera final
 {
   explicit Camera(Camera_config const& cfg);
 
-  Camera(Camera&&) = delete;
-  Camera& operator=(Camera&&) = delete;
+  Camera(Camera&&) = default;
+  Camera& operator=(Camera&&) = default;
+
   Camera(Camera const&) = delete;
   Camera& operator=(Camera const&) = delete;
 
