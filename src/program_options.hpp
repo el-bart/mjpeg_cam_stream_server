@@ -11,14 +11,14 @@ struct Resolution
 
 struct Camera_config
 {
-  Resolution capture_resolution;
-  std::filesystem::path video_device;
+  Resolution capture_resolution_;
+  std::filesystem::path video_device_;
 };
 
 struct Program_options
 {
-  Camera_config camera_config;
-  std::optional<std::string> show_help;
+  Camera_config camera_config_;
+  std::optional<std::string> show_help_;
 };
 
 Program_options parse_program_options(int argc, char** argv);

@@ -43,15 +43,15 @@ Program_options parse_program_options(int argc, char** argv)
   {
     std::stringstream ss;
     ss << desc << "\n";
-    po.show_help = ss.str();
+    po.show_help_ = ss.str();
     return po;
   }
 
-  po.camera_config.video_device = vm["device"].as<std::string>();
-  if( not fs::exists(po.camera_config.video_device) )
-    throw std::runtime_error{"video device " + po.camera_config.video_device.string() + " does not exist"};
+  po.camera_config_.video_device_ = vm["device"].as<std::string>();
+  if( not fs::exists(po.camera_config_.video_device_) )
+    throw std::runtime_error{"video device " + po.camera_config_.video_device_.string() + " does not exist"};
 
-  po.camera_config.capture_resolution = parse_resolution( vm["resolution"].as<std::string>() );
+  po.camera_config_.capture_resolution_ = parse_resolution( vm["resolution"].as<std::string>() );
 
   return po;
 }

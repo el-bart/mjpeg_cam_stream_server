@@ -14,6 +14,7 @@ target_link_libraries(write_to_jpeg ${OpenCV_LIBS})
 add_executable(check_resolutions mtest/check_resolutions.cpp)
 
 add_library(common
+  Camera.cpp
   program_options.cpp
 )
 target_link_libraries(common
