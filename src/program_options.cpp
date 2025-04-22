@@ -16,7 +16,7 @@ auto parse_resolution(std::string const& str)
   if( not std::regex_search(str, match, re) )
     throw std::runtime_error{"failed to parse resolution: " + str};
 
-  return Program_options::Resolution{
+  return Resolution{
     .x_ = boost::lexical_cast<unsigned>(match.str(1)),
     .y_ = boost::lexical_cast<unsigned>(match.str(2))
   };
@@ -47,11 +47,11 @@ Program_options parse_program_options(int argc, char** argv)
     return po;
   }
 
-  po.video_device = vm["device"].as<std::string>();
-  if( not fs::exists(po.video_device) )
-    throw std::runtime_error{"video device " + po.video_device.string() + " does not exist"};
+  po.camera_config.video_device = vm["device"].as<std::string>();
+  if( not fs::exists(po.camera_config.video_device) )
+    throw std::runtime_error{"video device " + po.camera_config.video_device.string() + " does not exist"};
 
-  po.capture_resolution = parse_resolution( vm["resolution"].as<std::string>() );
+  po.camera_config.capture_resolution = parse_resolution( vm["resolution"].as<std::string>() );
 
   return po;
 }

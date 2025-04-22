@@ -12,7 +12,7 @@ int main(int argc, char** argv)
       std::cout << *po.show_help;
       return 1;
     }
-    std::cout << "using " << po.video_device << " device in " << po.capture_resolution.x_ << "x" << po.capture_resolution.y_ << "\n";
+    std::cout << "using " << po.camera_config.video_device << " device in " << po.camera_config.capture_resolution.x_ << "x" << po.camera_config.capture_resolution.y_ << "\n";
     // TODO...
 
   }
