@@ -1,43 +1,24 @@
 #include <iostream>
 #include <string>
-#include <boost/program_options.hpp>
+#include "program_options.hpp"
 
-namespace po = boost::program_options;
-
-int main(int argc, char* argv[])
+int main(int argc, char** argv)
 {
-  po::options_description desc("Allowed options");
-  desc.add_options()
-    ("help,h", po::value<std::string>()->implicit_value(""),
-     "Show help. Optionally takes a topic string.")
-    ("stuff", po::value<std::string>(),
-     "An option that requires one argument");
-
-  po::variables_map vm;
-  try {
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-    po::notify(vm);
-  } catch (const po::error& e) {
-    std::cerr << "Error parsing options: " << e.what() << "\n";
-    return 1;
-  }
-
-  if (vm.count("help")) {
-    std::string topic = vm["help"].as<std::string>();
-    std::cout << desc << "\n";
-    if (!topic.empty()) {
-      std::cout << "Help topic requested: " << topic << "\n";
+  try
+  {
+    auto const po = parse_program_options(argc, argv);
+    if(po.show_help)
+    {
+      std::cout << *po.show_help;
+      return 1;
     }
-    return 0;
-  }
+    std::cout << "using " << po.video_device << " device in " << po.capture_resolution.x_ << "x" << po.capture_resolution.y_ << "\n";
+    // TODO...
 
-  if (vm.count("stuff")) {
-    std::string stuff_arg = vm["stuff"].as<std::string>();
-    std::cout << "Stuff argument: " << stuff_arg << "\n";
-  } else {
-    std::cout << "No --stuff argument provided.\n";
   }
-
-  return 0;
+  catch(std::exception const& ex)
+  {
+    std::cerr << argv[0] << ": ERROR: " << ex.what() << "\n";
+    return 13;
+  }
 }
-
