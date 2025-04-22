@@ -1,12 +1,8 @@
 #pragma once
 #include "program_options.hpp"
+#include "Jpeg.hpp"
 #include <memory>
 #include <opencv2/opencv.hpp>
-
-struct Jpeg
-{
-  std::vector<uint8_t> data_;
-};
 
 struct Camera final
 {
