@@ -40,7 +40,7 @@ auto to_jpeg(cv::Mat& frame, std::vector<int> const& params)
 }
 }
 
-std::shared_ptr<Jpeg> Camera::capture()
+JpegPtr Camera::capture()
 {
   if( not dev_.read(buffer_) )
     throw std::runtime_error{"Camera::capture(): failed to capture frame"};

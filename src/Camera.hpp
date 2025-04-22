@@ -15,7 +15,7 @@ struct Camera final
   Camera& operator=(Camera const&) = delete;
 
   // returns next frame from the camera in the JPEG format
-  std::shared_ptr<Jpeg> capture();
+  JpegPtr capture();
 
 private:
   cv::VideoCapture dev_;
