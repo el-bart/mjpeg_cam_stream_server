@@ -21,10 +21,28 @@ Camera::Camera(Camera_config const& cfg):
     }
 }
 
-std::shared_ptr<cv::Mat> Camera::capture()
+
+namespace
 {
-  auto frame = std::make_shared<cv::Mat>();
-  if( not dev_.read(*frame) )
+auto to_jpeg(cv::Mat& frame, std::vector<int> const& params)
+{
+  // ensure correct encoding
+  if (frame.type() != CV_8UC3)
+  {
+    cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB); // RGB
+    frame.convertTo(frame, CV_8UC3); // 8-bit channels
+  }
+
+  auto jpeg = std::make_shared<Jpeg>();
+  std::vector<uchar> buffer;
+  cv::imencode(".jpg", frame, jpeg->data_, params);
+  return jpeg;
+}
+}
+
+std::shared_ptr<Jpeg> Camera::capture()
+{
+  if( not dev_.read(buffer_) )
     throw std::runtime_error{"Camera::capture(): failed to capture frame"};
-  return frame;
+  return to_jpeg(buffer_, params_);
 }
