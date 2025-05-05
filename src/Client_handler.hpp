@@ -1,6 +1,5 @@
 #pragma once
 #include "Jpeg.hpp"
-#include <vector>
 
 struct Client_handler final
 {
