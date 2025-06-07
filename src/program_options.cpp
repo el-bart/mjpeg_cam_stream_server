@@ -53,7 +53,7 @@ Program_options parse_program_options(int argc, char** argv)
     throw std::runtime_error{"video device " + po.camera_config_.video_device_.string() + " does not exist"};
 
   po.camera_config_.capture_resolution_ = parse_resolution( vm["resolution"].as<std::string>() );
-  po.server_config_.port_ vm["port"].as<uint16_t>();
+  po.server_config_.port_ = vm["port"].as<uint16_t>();
 
   return po;
 }
