@@ -152,8 +152,8 @@ void Server::acceptClient()
   ctx.handler_ = csp;
   clients_.push_back( std::move(ctx) );
 
-  epoll_.add( csp->socket(), [this](int fd, auto) { this->disconnectClient(fd); }, Epoll::Event::Hup );
-  epoll_.add( csp->socket(), [csp](int, auto) { csp->nonBlockingIo(); }, Epoll::Event::In );
+  epoll_.add( csp->socket(), [this](int fd, auto) { this->disconnectClient(fd); }, Epoll::Event::Hup, Epoll::Event::Err );
+  epoll_.add( csp->socket(), [csp](int, auto) { csp->nonBlockingIo(); }, Epoll::Event::Out );
 
   log_.info("Server::acceptClient(): accepted new client connection", clients_.back());
 }
