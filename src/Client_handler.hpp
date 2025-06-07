@@ -1,10 +1,11 @@
 #pragma once
 #include "Jpeg.hpp"
+#include "Logger.hpp"
 #include <But/System/Descriptor.hpp>
 
 struct Client_handler final
 {
-  explicit Client_handler(But::System::Descriptor fd);
+  Client_handler(Logger log, But::System::Descriptor fd);
 
   Client_handler(Client_handler&&) = default;
   Client_handler& operator=(Client_handler&&) = default;
@@ -21,9 +22,16 @@ private:
   void sendHeaders();
   void sendFrameData();
 
+  Logger log_;
   But::System::Descriptor fd_;
-  char const* headers_{nullptr};
+
+  char const* topHeaders_{nullptr};
+
+  std::string preFrameHeaders_;
+
   JpegPtr frame_;
   unsigned char const* frameRemaingPtr_{nullptr};
   size_t frameRemaingBytes_{0};
+
+  char const* postFrameHeaders_{nullptr};
 };

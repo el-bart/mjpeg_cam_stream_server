@@ -9,66 +9,130 @@ namespace
 auto topHeaders()
 {
   return
-    "HTTP/1.0 200 OK\n\r"
-    "Server: localhost\n\r"
-    "Connection: close\n\r"
-    "Max-Age: 0\n\r"
-    "Expires: 0\n\r"
-    "Cache-Control: no-cache, private\n\r"
-    "Pragma: no-cache\n\r"
-    "Content-Type: multipart/x-mixed-replace; boundary=MjpegServerFrameBoundaryIndicator\n\r"
-    "\n\r";
+    "HTTP/1.0 200 OK\r\n"
+    "Server: localhost\r\n"
+    "Connection: close\r\n"
+    "Max-Age: 0\r\n"
+    "Expires: 0\r\n"
+    "Cache-Control: no-cache, private\r\n"
+    "Pragma: no-cache\r\n"
+    "Content-Type: multipart/x-mixed-replace; boundary=MjpegServerFrameBoundaryIndicator\r\n"
+    "\r\n";
+}
+
+
+auto preFrameHeaders(JpegPtr const& frame)
+{
+  std::stringstream ss;
+  ss << "--MjpegServerFrameBoundaryIndicator\r\n"
+        "Content-type: image/jpeg\r\n"
+        "Content-Length: " << frame->data_.size() << "\r\n"
+        "\r\n";
+  return ss.str();
+}
+
+
+auto postFrameHeaders()
+{
+  return
+    "\r\n"
+    "\r\n";
 }
 }
 
 
-Client_handler::Client_handler(But::System::Descriptor fd):
+Client_handler::Client_handler(Logger log, But::System::Descriptor fd):
+  log_{ std::move(log) },
   fd_{ std::move(fd) },
-  headers_{ topHeaders() }
+  topHeaders_{ topHeaders() }
 {
-  But::System::makeNonblocking( fd.get() );
+  But::System::makeNonblocking( fd_.get() );
 }
 
 
-void Client_handler::enqueueFrame(std::shared_ptr<Jpeg> frame)
+void Client_handler::enqueueFrame(JpegPtr frame)
 {
-  if(headers_)
+  if(topHeaders_) // no point in enqueuing anything if initial headers are not yet complete
     return;
-  if(frame_)
+  if(postFrameHeaders_) // still sending previosu frame - do not touch anything
     return;
   frame_ = std::move(frame);
-  frameRemaingPtr_ = frame->data_.data();
-  frameRemaingBytes_ = frame->data_.size();
+  preFrameHeaders_ = preFrameHeaders(frame_);
+  frameRemaingPtr_ = frame_->data_.data();
+  frameRemaingBytes_ = frame_->data_.size();
+  postFrameHeaders_ = postFrameHeaders();
 }
 
 
 void Client_handler::nonBlockingIo()
 {
-  if(headers_)
+  if(topHeaders_)
     sendHeaders();
   else
     sendFrameData();
 }
 
 
-void Client_handler::sendHeaders()
+namespace
 {
-  assert(headers_);
-  auto const ret = write( fd_.get(), headers_, strlen(headers_) );
+size_t writeSome(But::System::Descriptor const& fd, void const* data, size_t len)
+{
+  auto const ret = write(fd.get(), data, len);
   if(ret == -1)
   {
     if(errno == EWOULDBLOCK)
-      return;
-    throw std::runtime_error{"Client_handler::sendHeaders(): error while writing headers"};
+      return 0;
+    throw std::runtime_error{"Client_handler::writeSome(): error while writing data to client"};
   }
-  headers_ += ret;
+  assert(ret > 0);
+  return ret;
+}
+}
 
-  if(*headers_ == 0)
-    headers_ = nullptr;
+
+void Client_handler::sendHeaders()
+{
+  assert(topHeaders_);
+  if( topHeaders_ == topHeaders() )
+    log_.info("sending top HTTP headers");
+
+  topHeaders_ += writeSome(fd_, topHeaders_, strlen(topHeaders_));
+
+  if(*topHeaders_ == 0)
+  {
+    topHeaders_ = nullptr;
+    log_.info("top HTTP headers sent successfuly - sending frames from now on");
+  }
 }
 
 
 void Client_handler::sendFrameData()
 {
-  // TODO
+  if( not preFrameHeaders_.empty() )
+  {
+    preFrameHeaders_.erase( 0, writeSome(fd_, preFrameHeaders_.data(), preFrameHeaders_.size()) );
+    if( not preFrameHeaders_.empty() )
+      return;
+  }
+
+  if(frame_)
+  {
+    assert(frameRemaingPtr_);
+    assert(frameRemaingBytes_ > 0);
+    auto const bytes = writeSome(fd_, frameRemaingPtr_, frameRemaingBytes_);
+    frameRemaingPtr_ += bytes;
+    frameRemaingBytes_ -= bytes;
+    if(frameRemaingBytes_ > 0)
+      return;
+    assert(frameRemaingBytes_ == 0);
+    frameRemaingPtr_ = nullptr;
+    frame_.reset();
+  }
+
+  if(postFrameHeaders_)
+  {
+    postFrameHeaders_ += writeSome(fd_, postFrameHeaders_, strlen(postFrameHeaders_));
+    if(*postFrameHeaders_ == 0)
+      postFrameHeaders_ = nullptr;
+  }
 }
