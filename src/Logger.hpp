@@ -2,12 +2,17 @@
 #include <But/Log/Logger.hpp>
 #include <But/Log/Destination/Console.hpp>
 #include <But/Log/Field/LogLevel.hpp>
-#include <But/Log/Field/UtcIsoDateTime.hpp>
+#include <But/Log/Field/PreciseDateTime.hpp>
 #include <But/Log/Field/ThreadId.hpp>
 #include <But/Log/Field/Pid.hpp>
+#include <typeinfo>
+
 
 struct Logger final
 {
+  using EntryArray = But::Log::Backend::EntryArray;
+  using EntryProxy = But::Log::Backend::EntryProxy;
+
   using DestPtr = But::Log::Logger<>::Destination;
 
   explicit Logger(DestPtr d): impl_{ std::move(d) } { }
@@ -52,8 +57,9 @@ private:
   void log(But::Log::Field::LogLevel ll, std::string_view message, Args&& ...args) const
   {
     // here some common fields are adde: UTC ISO timestamp, PID, thread ID
-    impl_.log( ll, message,
-        But::Log::Field::UtcIsoDateTime{},
+    impl_.log( message,
+        ll,
+        But::Log::Field::PreciseDateTime{},
         But::Log::Field::Pid{},
         But::Log::Field::ThreadId{},
         std::forward<Args>(args)... );
@@ -72,4 +78,17 @@ auto makeLogger(Args&& ...args)
 inline auto makeConsoleLogger()
 {
   return makeLogger<But::Log::Destination::Console>();
+}
+
+
+struct Exception
+{
+  std::exception const& value_;
+};
+
+inline constexpr auto fieldName(Exception const*) { return "Exception"; }
+inline auto objectValue(Logger::EntryProxy& p, Exception const& ex)
+{
+  p.value("type", typeid(ex.value_).name());
+  p.value("what", ex.value_.what());
 }
