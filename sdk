@@ -19,6 +19,7 @@ then
 fi
 
 flags+=(--rm)
+flags+=(--publish 8080:8080) # for testing
 flags+=(--user "$(id -u):$(id -g)")
 flags+=(--volume "$app_dir:/mnt")
 flags+=(--workdir "/mnt")
