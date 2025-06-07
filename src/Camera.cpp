@@ -1,7 +1,8 @@
 #include "Camera.hpp"
 #include <sstream>
 
-Camera::Camera(Camera_config const& cfg):
+Camera::Camera(Logger log, Camera_config const& cfg):
+  log_{ std::move(log) },
   dev_{cfg.video_device_}
 {
     if( not dev_.isOpened() )
