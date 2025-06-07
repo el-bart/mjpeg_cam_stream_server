@@ -55,8 +55,11 @@ Server::~Server()
 
 void Server::enqueueFrame(JpegPtr frame)
 {
-  std::lock_guard lock{nextFrameMutex_};
-  nextFrame_ = frame;
+  {
+    std::lock_guard lock{nextFrameMutex_};
+    nextFrame_ = frame;
+  }
+  epoll_.interrupt();
 }
 
 
@@ -149,8 +152,19 @@ void Server::acceptClient()
   ctx.handler_ = csp;
   clients_.push_back( std::move(ctx) );
 
-  epoll_.add( csp->socket(), [this](int fd, auto) { this->epoll_.remove(fd); }, Epoll::Event::Hup );
+  epoll_.add( csp->socket(), [this](int fd, auto) { this->disconnectClient(fd); }, Epoll::Event::Hup );
   epoll_.add( csp->socket(), [csp](int, auto) { csp->nonBlockingIo(); }, Epoll::Event::In );
 
   log_.info("Server::acceptClient(): accepted new client connection", clients_.back());
+}
+
+
+void Server::disconnectClient(int const fd)
+{
+  this->epoll_.remove(fd);
+
+  for(auto& ctx: clients_)
+    if(auto c = ctx.handler_.lock(); not c)
+      log_.info("client disconnected", ctx);
+  removeDeadClients();
 }

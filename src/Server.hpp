@@ -36,6 +36,7 @@ private:
   void removeDeadClients();
   void enqueueNewFrame();
   void acceptClient();
+  void disconnectClient(int fd);
   JpegPtr nextFrame();
 
   std::mutex nextFrameMutex_;
