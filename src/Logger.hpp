@@ -75,9 +75,9 @@ auto makeLogger(Args&& ...args)
   return Logger{ But::makeSharedNN<Dst>( std::forward<Args>(args)... ) };
 }
 
-inline auto makeConsoleLogger()
+inline auto makeConsoleLogger(bool syncWithStdio = true)
 {
-  return makeLogger<But::Log::Destination::Console>();
+  return makeLogger<But::Log::Destination::Console>(syncWithStdio);
 }
 
 

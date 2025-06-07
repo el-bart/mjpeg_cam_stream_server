@@ -47,12 +47,11 @@ int main(int argc, char** argv)
     log.info("registered required signal handlers");
 
     Server s{log, po.server_config_};
-    log.info("server initialized");
+    log.info("server initialized", po.server_config_);
 
     Camera c{log, po.camera_config_};
-    log.info("cemera initialized");
+    log.info("cemera initialized", po.camera_config_);
 
-    log.flush();
     while(not g_quit)
     {
       auto f = c.capture();
