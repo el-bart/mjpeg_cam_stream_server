@@ -21,6 +21,7 @@ add_executable(check_resolutions mtest/check_resolutions.cpp)
 add_library(common
   Camera.cpp
   Client_handler.cpp
+  Server.cpp
   program_options.cpp
 )
 target_link_libraries(common
