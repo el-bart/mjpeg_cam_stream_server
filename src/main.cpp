@@ -2,6 +2,7 @@
 #include <string>
 #include "program_options.hpp"
 #include "Camera.hpp"
+#include "Server.hpp"
 #include "Logger.hpp"
 
 int main(int argc, char** argv)

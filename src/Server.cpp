@@ -7,6 +7,13 @@
 using But::System::Epoll;
 using But::System::Descriptor;
 
+constexpr auto fieldName(Server::Client_context const*) { return "Client_context"; }
+auto objectValue(Logger::EntryProxy& p, Server::Client_context const& ctx)
+{
+  p.value("ip", ctx.ip_);
+}
+
+
 namespace
 {
 auto createServer(Server_config const& sc)
@@ -31,7 +38,8 @@ auto createServer(Server_config const& sc)
 }
 
 
-Server::Server(Server_config sc):
+Server::Server(Logger log, Server_config sc):
+  log_{ std::move(log) },
   listenSocket_{ createServer( std::move(sc) ) },
   th_{ [this] { this->loop(); } }
 {
@@ -64,7 +72,7 @@ void Server::loop()
     }
     catch(std::exception const& ex)
     {
-      std::cerr << "Server::loop(): error: " << ex.what() << "\n";
+      log_.warning("exception thrown while processing clients", Exception{ex});
     }
   }
 }
@@ -98,7 +106,7 @@ void Server::enqueueNewFrame()
     else
     {
       hasDeadClients = true;
-      std::cout << "Server: client " << ctx.ip_ << " is disconnected\n";
+      log_.info("client disconnected", ctx);
     }
 
   if(hasDeadClients)
@@ -142,5 +150,5 @@ void Server::acceptClient()
   epoll_.add( csp->socket(), [this](int fd, auto) { this->epoll_.remove(fd); }, Epoll::Event::Hup );
   epoll_.add( csp->socket(), [csp](int, auto) { csp->nonBlockingIo(); }, Epoll::Event::In );
 
-  std::cout << "Server::acceptClient(): accepted connection from " << clients_.back().ip_ << "\n";
+  log_.info("Server::acceptClient(): accepted new client connection", clients_.back());
 }

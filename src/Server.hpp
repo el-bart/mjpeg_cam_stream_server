@@ -1,6 +1,7 @@
 #pragma once
 #include "Client_handler.hpp"
 #include "program_options.hpp"
+#include "Logger.hpp"
 #include <But/System/Epoll.hpp>
 #include <But/System/Descriptor.hpp>
 #include <But/Threading/JoiningThread.hpp>
@@ -11,7 +12,13 @@
 
 struct Server final
 {
-  explicit Server(Server_config sc);
+  struct Client_context
+  {
+    std::string ip_;
+    std::weak_ptr<Client_handler> handler_;
+  };
+
+  Server(Logger log, Server_config sc);
   ~Server();
 
   Server(Server&&) = delete;
@@ -24,12 +31,6 @@ struct Server final
   void enqueueFrame(JpegPtr frame);
 
 private:
-  struct Client_context
-  {
-    std::string ip_;
-    std::weak_ptr<Client_handler> handler_;
-  };
-
   void loop();
   void loopOnce();
   void removeDeadClients();
@@ -40,6 +41,7 @@ private:
   std::mutex nextFrameMutex_;
   JpegPtr nextFrame_; // nullptr == nothing is waiting
 
+  Logger log_;
   std::atomic_bool quit_{false};
   But::System::Descriptor listenSocket_;
   std::vector<Client_context> clients_;
