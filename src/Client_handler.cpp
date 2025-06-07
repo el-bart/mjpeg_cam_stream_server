@@ -75,14 +75,14 @@ void Client_handler::nonBlockingIo()
 
 namespace
 {
-size_t writeSome(But::System::Descriptor const& fd, void const* data, size_t len)
+size_t writeSome(char const* msg, But::System::Descriptor const& fd, void const* data, size_t len)
 {
   auto const ret = write(fd.get(), data, len);
   if(ret == -1)
   {
     if(errno == EWOULDBLOCK)
       return 0;
-    throw std::runtime_error{"Client_handler::writeSome(): error while writing data to client"};
+    throw std::runtime_error{"Client_handler::writeSome(): error while writing data to client: " + std::string{msg}};
   }
   assert(ret > 0);
   return ret;
@@ -96,7 +96,7 @@ void Client_handler::sendHeaders()
   if( topHeaders_ == topHeaders() )
     log_.info("sending top HTTP headers");
 
-  topHeaders_ += writeSome(fd_, topHeaders_, strlen(topHeaders_));
+  topHeaders_ += writeSome("writing top headers", fd_, topHeaders_, strlen(topHeaders_));
 
   if(*topHeaders_ == 0)
   {
@@ -110,7 +110,7 @@ void Client_handler::sendFrameData()
 {
   if( not preFrameHeaders_.empty() )
   {
-    preFrameHeaders_.erase( 0, writeSome(fd_, preFrameHeaders_.data(), preFrameHeaders_.size()) );
+    preFrameHeaders_.erase( 0, writeSome("writing frame pre-headers", fd_, preFrameHeaders_.data(), preFrameHeaders_.size()) );
     if( not preFrameHeaders_.empty() )
       return;
   }
@@ -119,7 +119,7 @@ void Client_handler::sendFrameData()
   {
     assert(frameRemaingPtr_);
     assert(frameRemaingBytes_ > 0);
-    auto const bytes = writeSome(fd_, frameRemaingPtr_, frameRemaingBytes_);
+    auto const bytes = writeSome("writing frame bytes", fd_, frameRemaingPtr_, frameRemaingBytes_);
     frameRemaingPtr_ += bytes;
     frameRemaingBytes_ -= bytes;
     if(frameRemaingBytes_ > 0)
@@ -131,7 +131,7 @@ void Client_handler::sendFrameData()
 
   if(postFrameHeaders_)
   {
-    postFrameHeaders_ += writeSome(fd_, postFrameHeaders_, strlen(postFrameHeaders_));
+    postFrameHeaders_ += writeSome("writing frame post-headers", fd_, postFrameHeaders_, strlen(postFrameHeaders_));
     if(*postFrameHeaders_ == 0)
       postFrameHeaders_ = nullptr;
   }
