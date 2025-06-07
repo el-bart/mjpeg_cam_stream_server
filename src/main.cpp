@@ -53,6 +53,7 @@ int main(int argc, char** argv)
     register_signals();
     log.info("registered required signal handlers");
 
+    log.info("all up - awaiting client connections");
     while(not g_quit)
     {
       auto f = c.capture();
