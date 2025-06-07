@@ -18,7 +18,12 @@ struct Client_handler final
   int socket() const { return fd_.get(); }
 
 private:
+  void sendHeaders();
+  void sendFrameData();
+
   But::System::Descriptor fd_;
   char const* headers_{nullptr};
   JpegPtr frame_;
+  unsigned char const* frameRemaingPtr_{nullptr};
+  size_t frameRemaingBytes_{0};
 };
