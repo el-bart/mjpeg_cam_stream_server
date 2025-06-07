@@ -10,6 +10,14 @@ add_compile_options(-Wall)
 add_compile_options(-Wextra)
 add_compile_options(-Werror)
 
+option(ENABLE_PROFILING "Enable GNU profiling with gprof" OFF)
+if(ENABLE_PROFILING)
+  message(STATUS "MJPEG server: enabling profiling")
+  add_compile_options(-pg)
+  add_link_options(-pg)
+  add_compile_definitions(GPROF=1)
+endif()
+
 find_package(OpenCV REQUIRED)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
