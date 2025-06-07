@@ -144,8 +144,10 @@ void Server::acceptClient()
   Descriptor client_fd{ accept(listenSocket_.get(), (struct sockaddr *)&client_addr, &size) };
   if(not client_fd)
     throw std::runtime_error{"Server::acceptClient(): accept() failed"};
-  auto csp = std::make_shared<Client_handler>( std::move(client_fd) );
-  clients_.emplace_back( clientIp(client_addr), csp );
+  Client_context ctx{ clientIp(client_addr) };
+  auto csp = std::make_shared<Client_handler>( log_.withFields(ctx), std::move(client_fd) );
+  ctx.handler_ = csp;
+  clients_.push_back( std::move(ctx) );
 
   epoll_.add( csp->socket(), [this](int fd, auto) { this->epoll_.remove(fd); }, Epoll::Event::Hup );
   epoll_.add( csp->socket(), [csp](int, auto) { csp->nonBlockingIo(); }, Epoll::Event::In );
