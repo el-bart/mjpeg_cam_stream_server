@@ -35,7 +35,6 @@ auto to_jpeg(cv::Mat& frame, std::vector<int> const& params)
   }
 
   auto jpeg = std::make_shared<Jpeg>();
-  std::vector<uchar> buffer;
   cv::imencode(".jpg", frame, jpeg->data_, params);
   return jpeg;
 }
