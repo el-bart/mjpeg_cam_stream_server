@@ -17,7 +17,6 @@ struct Camera_config
 
 struct Server_config
 {
-  std::string ip_;
   uint16_t port_{};
 };
 

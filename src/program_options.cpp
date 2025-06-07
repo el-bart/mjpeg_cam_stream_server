@@ -21,11 +21,6 @@ auto parse_resolution(std::string const& str)
     .y_ = boost::lexical_cast<unsigned>(match.str(2))
   };
 }
-
-auto parse_server_config(std::string ip, uint16_t const port)
-{
-  return Server_config{ std::move(ip), port };
-}
 }
 
 
@@ -36,7 +31,6 @@ Program_options parse_program_options(int argc, char** argv)
     ("help,h", "show this helpful help")
     ("device,d", po::value<std::string>()->default_value("/dev/video0"), "camera device to use")
     ("resolution,r", po::value<std::string>()->default_value("1920x1080"), "set capture resolution for the camera")
-    ("listen,l", po::value<std::string>()->default_value("0.0.0.0"), "set the interface to listen on (IP)")
     ("port,p", po::value<uint16_t>()->default_value(8080), "set the port to listen on (TCP)")
     ;
 
@@ -59,7 +53,7 @@ Program_options parse_program_options(int argc, char** argv)
     throw std::runtime_error{"video device " + po.camera_config_.video_device_.string() + " does not exist"};
 
   po.camera_config_.capture_resolution_ = parse_resolution( vm["resolution"].as<std::string>() );
-  po.server_config_ = parse_server_config( vm["listen"].as<std::string>(), vm["port"].as<uint16_t>() );
+  po.server_config_.port_ vm["port"].as<uint16_t>();
 
   return po;
 }
