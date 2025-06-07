@@ -1,9 +1,10 @@
 #pragma once
 #include "Jpeg.hpp"
+#include <But/System/Descriptor.hpp>
 
 struct Client_handler final
 {
-  //explicit Client_handler_handler(...)
+  explicit Client_handler(But::System::Descriptor fd);
 
   Client_handler(Client_handler&&) = default;
   Client_handler& operator=(Client_handler&&) = default;
@@ -14,7 +15,10 @@ struct Client_handler final
   void enqueueFrame(JpegPtr frame);
   void nonBlockingIo();
 
+  int socket() const { return fd_.get(); }
+
 private:
+  But::System::Descriptor fd_;
   char const* headers_{nullptr};
   JpegPtr frame_;
 };
