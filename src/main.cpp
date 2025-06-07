@@ -20,7 +20,7 @@ void register_signals()
       throw std::runtime_error{"register_signals(): failed to register signal " + std::to_string(s) + " for 'quit' action"};
 
   for(auto s: {SIGPIPE, SIGFPE, SIGIO})
-    if( signal(s, handle_quit) == SIG_ERR )
+    if( signal(s, handle_ignore) == SIG_ERR )
       throw std::runtime_error{"register_signals(): failed to register signal " + std::to_string(s) + " for 'ignore' action"};
 }
 }
