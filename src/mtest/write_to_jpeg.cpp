@@ -20,7 +20,7 @@ void write_to_disk(cv::Mat& frame, char const* path)
   // You can use this buffer to send the frame over a network or save it to a file
 
   // Example: Save the buffer to a file
-  FILE* file = fopen("output.jpg", "wb");
+  FILE* file = fopen(path, "wb");
   if (!file)
   {
     std::cerr << "Could not open file for writing." << std::endl;

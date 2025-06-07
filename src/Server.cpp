@@ -147,7 +147,7 @@ void Server::acceptClient()
   Descriptor client_fd{ accept(listenSocket_.get(), (struct sockaddr *)&client_addr, &size) };
   if(not client_fd)
     throw std::runtime_error{"Server::acceptClient(): accept() failed"};
-  Client_context ctx{ clientIp(client_addr) };
+  Client_context ctx{ clientIp(client_addr), {} };
   auto csp = std::make_shared<Client_handler>( log_.withFields(ctx), std::move(client_fd) );
   ctx.handler_ = csp;
   clients_.push_back( std::move(ctx) );
