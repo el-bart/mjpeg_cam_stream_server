@@ -15,9 +15,16 @@ struct Camera_config
   std::filesystem::path video_device_;
 };
 
+struct Server_config
+{
+  std::string ip_;
+  uint16_t port_{};
+};
+
 struct Program_options
 {
   Camera_config camera_config_;
+  Server_config server_config_;
   std::optional<std::string> show_help_;
 };
 
