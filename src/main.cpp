@@ -6,29 +6,26 @@
 
 int main(int argc, char** argv)
 {
+  auto log = makeConsoleLogger();
   try
   {
     auto const po = parse_program_options(argc, argv);
     if(po.show_help_)
     {
       std::cout << *po.show_help_;
-      return 1;
+      return 2;
     }
-    auto log = makeConsoleLogger();
-    std::cout << "using " << po.camera_config_.video_device_ << " device in ";
-    std::cout << po.camera_config_.capture_resolution_.x_ << "x" << po.camera_config_.capture_resolution_.y_ << "\n";
-    std::cout << "stream served at HTTP port " << po.server_config_.port_ << "\n";
-
+    log.info("configuration used by application", po.camera_config_, po.server_config_);
 
     // smoke test
-    Camera c{po.camera_config_};
+    Camera c{log, po.camera_config_};
     c.capture();
 
     // TODO...
   }
   catch(std::exception const& ex)
   {
-    std::cerr << argv[0] << ": ERROR: " << ex.what() << "\n";
+    log.error("application failed with an exception", Exception{ex});
     return 13;
   }
 }

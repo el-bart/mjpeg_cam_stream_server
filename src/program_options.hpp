@@ -1,4 +1,5 @@
 #pragma once
+#include "Logger.hpp"
 #include <filesystem>
 #include <optional>
 #include <string>
@@ -9,16 +10,38 @@ struct Resolution
   unsigned y_{};
 };
 
+inline constexpr auto fieldName(Resolution const*) { return "Resolution"; }
+inline auto objectValue(Logger::EntryProxy& p, Resolution const& res)
+{
+  p.value("x", res.x_);
+  p.value("y", res.y_);
+}
+
+
 struct Camera_config
 {
   Resolution capture_resolution_;
   std::filesystem::path video_device_;
 };
 
+inline constexpr auto fieldName(Camera_config const*) { return "Camera_config"; }
+inline auto objectValue(Logger::EntryProxy& p, Camera_config const& cc)
+{
+  p.object("capture").nest(cc.capture_resolution_);
+  p.value("device", cc.video_device_.string());
+}
+
+
 struct Server_config
 {
   uint16_t port_{};
 };
+
+inline constexpr auto fieldName(Server_config const*) { return "Server_config"; }
+inline auto objectValue(Logger::EntryProxy& p, Server_config const& sc)
+{
+  p.value("port", sc.port_);
+}
 
 struct Program_options
 {
