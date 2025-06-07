@@ -26,6 +26,7 @@ add_library(common
 )
 target_link_libraries(common
   ${OpenCV_LIBS}
+  but
   boost_program_options
 )
 
