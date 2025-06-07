@@ -24,19 +24,25 @@ struct Server final
   void enqueueFrame(JpegPtr frame);
 
 private:
+  struct Client_context
+  {
+    std::string ip_;
+    std::weak_ptr<Client_handler> handler_;
+  };
+
   void loop();
   void loopOnce();
   void removeDeadClients();
   void enqueueNewFrame();
+  void acceptClient();
   JpegPtr nextFrame();
 
   std::mutex nextFrameMutex_;
   JpegPtr nextFrame_; // nullptr == nothing is waiting
 
-  But::System::Descriptor listenSocket_;
-
   std::atomic_bool quit_{false};
-  std::vector<std::weak_ptr<Client_handler>> clients_;
+  But::System::Descriptor listenSocket_;
+  std::vector<Client_context> clients_;
   But::System::Epoll epoll_;
   But::Threading::JoiningThread<std::thread> th_;
 };

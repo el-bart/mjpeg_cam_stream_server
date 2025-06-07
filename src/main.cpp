@@ -2,6 +2,7 @@
 #include <string>
 #include "program_options.hpp"
 #include "Camera.hpp"
+#include "Logger.hpp"
 
 int main(int argc, char** argv)
 {
@@ -13,9 +14,11 @@ int main(int argc, char** argv)
       std::cout << *po.show_help_;
       return 1;
     }
+    auto log = makeConsoleLogger();
     std::cout << "using " << po.camera_config_.video_device_ << " device in ";
     std::cout << po.camera_config_.capture_resolution_.x_ << "x" << po.camera_config_.capture_resolution_.y_ << "\n";
     std::cout << "stream served at HTTP port " << po.server_config_.port_ << "\n";
+
 
     // smoke test
     Camera c{po.camera_config_};

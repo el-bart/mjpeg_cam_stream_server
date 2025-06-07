@@ -2,26 +2,20 @@
 #include <iostream>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
-/*
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <errno.h>
-#include <sys/types.h>
-*/
+using But::System::Epoll;
+using But::System::Descriptor;
 
 namespace
 {
 auto createServer(Server_config const& sc)
 {
-  auto fd = But::System::Descriptor{ socket(AF_INET, SOCK_STREAM, 0) };
+  auto fd = Descriptor{ socket(AF_INET, SOCK_STREAM, 0) };
   if(not fd)
     throw std::runtime_error{"Server: cannot create FD"};
 
-  struct sockaddr_in server_addr;
-  socklen_t sin_size;
+  sockaddr_in server_addr;
   memset(&server_addr, 0, sizeof(server_addr));
   server_addr.sin_family = AF_INET;
   server_addr.sin_addr.s_addr = INADDR_ANY;
@@ -60,7 +54,8 @@ void Server::enqueueFrame(JpegPtr frame)
 
 void Server::loop()
 {
-  // TODO: register listening Socket
+  epoll_.add( listenSocket_.get(), [this](int, auto) { this->acceptClient(); }, Epoll::Event::In );
+
   while(not quit_)
   {
     try
@@ -84,7 +79,7 @@ void Server::loopOnce()
 
 void Server::removeDeadClients()
 {
-  auto constexpr isDead = [](auto& c) { return c.lock() == nullptr; };
+  auto constexpr isDead = [](auto& c) { return c.handler_.lock() == nullptr; };
   auto newEnd = std::remove_if( begin(clients_), end(clients_), isDead );
   clients_.erase( newEnd, end(clients_) );
 }
@@ -97,11 +92,14 @@ void Server::enqueueNewFrame()
     return;
 
   auto hasDeadClients = false;
-  for(auto& cw: clients_)
-    if(auto cs = cw.lock(); cs)
-      cs->enqueueFrame(f);
+  for(auto& ctx: clients_)
+    if(auto c = ctx.handler_.lock(); c)
+      c->enqueueFrame(f);
     else
+    {
       hasDeadClients = true;
+      std::cout << "Server: client " << ctx.ip_ << " is disconnected\n";
+    }
 
   if(hasDeadClients)
     removeDeadClients();
@@ -115,4 +113,34 @@ JpegPtr Server::nextFrame()
   using std::swap;
   swap(frame, nextFrame_);
   return frame;
+}
+
+
+namespace
+{
+std::string clientIp(sockaddr_in const &client_addr)
+{
+  char client_ip[INET_ADDRSTRLEN];
+  auto *addr_in = (struct sockaddr_in *)&client_addr;
+  if( inet_ntop(AF_INET, &(addr_in->sin_addr), client_ip, INET_ADDRSTRLEN) == nullptr )
+    throw std::runtime_error{"Server: clientIp(): failed to get client IP"};
+  return client_ip;
+}
+}
+
+
+void Server::acceptClient()
+{
+  sockaddr_in client_addr;
+  unsigned size = sizeof(client_addr);
+  Descriptor client_fd{ accept(listenSocket_.get(), (struct sockaddr *)&client_addr, &size) };
+  if(not client_fd)
+    throw std::runtime_error{"Server::acceptClient(): accept() failed"};
+  auto csp = std::make_shared<Client_handler>( std::move(client_fd) );
+  clients_.emplace_back( clientIp(client_addr), csp );
+
+  epoll_.add( csp->socket(), [this](int fd, auto) { this->epoll_.remove(fd); }, Epoll::Event::Hup );
+  epoll_.add( csp->socket(), [csp](int, auto) { csp->nonBlockingIo(); }, Epoll::Event::In );
+
+  std::cout << "Server::acceptClient(): accepted connection from " << clients_.back().ip_ << "\n";
 }
