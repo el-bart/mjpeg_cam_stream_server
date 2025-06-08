@@ -1,0 +1,27 @@
+#!/bin/bash
+set -eu -o pipefail
+app_dir=$(dirname "$(readlink -e "$0")")
+app=$(basename "$0")
+image="mjpeg_cam_stream_server"
+
+flags=()
+if tty -s
+then
+  flags+=("-it")
+fi
+
+flags+=(--rm)
+flags+=(--publish 8080:8080)
+flags+=(--user "$(id -u):$(id -g)")
+
+shopt -s nullglob
+for dev in /dev/video*
+do
+  flags+=(--device "$dev")
+  flags+=(--group-add "$(stat -c %g "$dev")")
+done
+
+docker run \
+  "${flags[@]}" \
+  "$image" \
+  "$@"

@@ -10,7 +10,7 @@ else
 fi
 image="$(sed "s%^$vcs_root/%%" <<< "$app_dir" | tr '/.\- &' '_' | tr '[:upper:]' '[:lower:]')_3dsdk"
 
-docker build -t "$image" "$app_dir/docker/"
+docker build -t "$image" "$app_dir/docker/sdk/"
 
 flags=()
 if tty -s

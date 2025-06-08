@@ -32,6 +32,21 @@ build/release/mjpeg_cam_stream_server
 ```
 run it with `--help` to check the usage options.
 
+additionally `mjpeg_cam_stream_server` docker image is created to use at runtime.
+
+
+## running
+
+TL;DR after:
+```
+./compile
+```
+is used to create binary and runtime image, run server with:
+```
+./run
+```
+optional arguments to script will be passed to `mjpeg_cam_stream_server` binary directly.
+
 
 ## usage
 

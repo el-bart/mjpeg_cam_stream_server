@@ -1,10 +1,24 @@
 #!/bin/bash
 set -eu -o pipefail
 app_dir=$(dirname "$(readlink -e "$0")")
-dir=build/release
+app=$(basename "$0")
+build_dir="build/release"
+runtime_image="mjpeg_cam_stream_server"
 
+echo "$app: compiling binary"
 cd "$app_dir"
-mkdir -p "$dir"
-./sdk cmake -B "$dir" -G Ninja -DCMAKE_BUILD_TYPE=Release src/
-./sdk ninja -C "$dir"
-ls -alh "$dir/mjpeg_cam_stream_server"
+mkdir -p "$build_dir"
+./sdk cmake -B "$build_dir" -G Ninja -DCMAKE_BUILD_TYPE=Release src/
+./sdk ninja -C "$build_dir"
+
+echo "$app: creating runtime docker image"
+tmp=$(mktemp -d)
+trap "rm -rf '$tmp'" EXIT
+cp -v docker/runtime/* "$tmp/"
+cp -v "$build_dir/mjpeg_cam_stream_server" "$tmp/"
+docker build -t "$runtime_image" "$tmp/"
+
+echo
+echo "$app: all done!"
+ls -alh "$build_dir/mjpeg_cam_stream_server"
+docker image ls | grep "\<$runtime_image\>"
