@@ -30,25 +30,25 @@ struct Server final
   Server& operator=(Server const&) = delete;
 
   /** enqueues new frame. can be called from any thread. */
-  void enqueueFrame(JpegPtr frame);
+  void enqueue_frame(JpegPtr frame);
 
 private:
   void loop();
-  void loopOnce();
-  void enqueueNewFrame();
-  void acceptClient();
-  void disconnectClient(int fd);
-  void clientIo(int fd);
-  void startObserving(int fd);
-  void stopObserving(int fd);
-  JpegPtr nextFrame();
+  void loop_once();
+  void enqueue_new_frame();
+  void accept_client();
+  void disconnect_client(int fd);
+  void client_io(int fd);
+  void start_observing(int fd);
+  void stop_observing(int fd);
+  JpegPtr next_frame();
 
-  std::mutex nextFrameMutex_;
-  JpegPtr nextFrame_; // nullptr == nothing is waiting
+  std::mutex next_frame_mutex_;
+  JpegPtr next_frame_; // nullptr == nothing is waiting
 
   Logger log_;
   std::atomic_bool quit_{false};
-  But::System::Descriptor listenSocket_;
+  But::System::Descriptor listen_socket_;
   std::map<int, Client_context> clients_;
   But::System::Epoll epoll_;
   But::Threading::JoiningThread<std::thread> th_;

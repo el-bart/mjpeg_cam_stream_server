@@ -29,7 +29,7 @@ void register_signals()
 
 int main(int argc, char** argv)
 {
-  auto log = makeConsoleLogger();
+  auto log = make_console_logger();
   try
   {
     auto const po = parse_program_options(argc, argv);
@@ -57,7 +57,7 @@ int main(int argc, char** argv)
     while(not g_quit)
     {
       auto f = c.capture();
-      s.enqueueFrame(f);
+      s.enqueue_frame(f);
     }
     log.info("quit has been requested via signal");
   }

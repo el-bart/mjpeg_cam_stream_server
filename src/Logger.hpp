@@ -70,14 +70,14 @@ private:
 
 
 template<typename Dst, typename ...Args>
-auto makeLogger(Args&& ...args)
+auto make_logger(Args&& ...args)
 {
   return Logger{ But::makeSharedNN<Dst>( std::forward<Args>(args)... ) };
 }
 
-inline auto makeConsoleLogger(bool syncWithStdio = true)
+inline auto make_console_logger(bool syncWithStdio = true)
 {
-  return makeLogger<But::Log::Destination::Console>(syncWithStdio);
+  return make_logger<But::Log::Destination::Console>(syncWithStdio);
 }
 
 

@@ -10,15 +10,15 @@ using But::System::Descriptor;
 
 namespace
 {
-struct ClientsCount
+struct Clients_count
 {
   size_t value_{};
 };
-constexpr auto fieldName(ClientsCount const*) { return "ClientsCount"; }
-inline auto fieldValue(ClientsCount const& cc) { return cc.value_; }
+constexpr auto fieldName(Clients_count const*) { return "Clients_count"; }
+inline auto fieldValue(Clients_count const& cc) { return cc.value_; }
 
 
-auto createServer(Server_config const& sc)
+auto create_server(Server_config const& sc)
 {
   auto fd = Descriptor{ socket(AF_INET, SOCK_STREAM, 0) };
   if(not fd)
@@ -42,7 +42,7 @@ auto createServer(Server_config const& sc)
 
 Server::Server(Logger log, Server_config sc):
   log_{ std::move(log) },
-  listenSocket_{ createServer( std::move(sc) ) },
+  listen_socket_{ create_server( std::move(sc) ) },
   th_{ [this] { this->loop(); } }
 {
 }
@@ -55,11 +55,11 @@ Server::~Server()
 }
 
 
-void Server::enqueueFrame(JpegPtr frame)
+void Server::enqueue_frame(JpegPtr frame)
 {
   {
-    std::lock_guard lock{nextFrameMutex_};
-    nextFrame_ = frame;
+    std::lock_guard lock{next_frame_mutex_};
+    next_frame_ = frame;
   }
   epoll_.interrupt();
 }
@@ -67,13 +67,13 @@ void Server::enqueueFrame(JpegPtr frame)
 
 void Server::loop()
 {
-  epoll_.add( listenSocket_.get(), [this](int, auto) { this->acceptClient(); }, Epoll::Event::In );
+  epoll_.add( listen_socket_.get(), [this](int, auto) { this->accept_client(); }, Epoll::Event::In );
 
   while(not quit_)
   {
     try
     {
-      loopOnce();
+      loop_once();
     }
     catch(std::exception const& ex)
     {
@@ -83,34 +83,34 @@ void Server::loop()
 }
 
 
-void Server::loopOnce()
+void Server::loop_once()
 {
-  enqueueNewFrame();
+  enqueue_new_frame();
   epoll_.wait();
 }
 
 
-void Server::enqueueNewFrame()
+void Server::enqueue_new_frame()
 {
-  auto f = nextFrame();
+  auto f = next_frame();
   if(not f)
     return;
 
   for(auto& cp: clients_)
   {
-    cp.second.handler_.enqueueFrame(f);
-    stopObserving(cp.first);
-    startObserving(cp.first);
+    cp.second.handler_.enqueue_frame(f);
+    stop_observing(cp.first);
+    start_observing(cp.first);
   }
 }
 
 
-JpegPtr Server::nextFrame()
+JpegPtr Server::next_frame()
 {
-  std::lock_guard lock{nextFrameMutex_};
+  std::lock_guard lock{next_frame_mutex_};
   JpegPtr frame;
   using std::swap;
-  swap(frame, nextFrame_);
+  swap(frame, next_frame_);
   return frame;
 }
 
@@ -128,13 +128,13 @@ auto clientIp(sockaddr_in const &client_addr)
 }
 
 
-void Server::acceptClient()
+void Server::accept_client()
 {
   sockaddr_in client_addr;
   unsigned size = sizeof(client_addr);
-  Descriptor client_fd{ accept(listenSocket_.get(), (struct sockaddr *)&client_addr, &size) };
+  Descriptor client_fd{ accept(listen_socket_.get(), (struct sockaddr *)&client_addr, &size) };
   if(not client_fd)
-    throw std::runtime_error{"Server::acceptClient(): accept() failed"};
+    throw std::runtime_error{"Server::accept_client(): accept() failed"};
   auto const fd = client_fd.get();
   auto const ip = clientIp(client_addr);
   auto log = log_.withFields(ip);
@@ -142,45 +142,45 @@ void Server::acceptClient()
     Client_context ctx{ ip, log, Client_handler{ log, std::move(client_fd) } };
     clients_.insert( std::make_pair(fd, std::move(ctx)) );
   }
-  startObserving(fd);
-  log.info("Server::acceptClient(): accepted new client connection", ClientsCount{ clients_.size() });
+  start_observing(fd);
+  log.info("Server::accept_client(): accepted new client connection", Clients_count{ clients_.size() });
 }
 
 
-void Server::disconnectClient(int const fd)
+void Server::disconnect_client(int const fd)
 {
   auto it = clients_.find(fd);
   if(it == end(clients_))
       return;
   auto const processed_frames = it->second.handler_.processed_frames();
   auto log = it->second.log_;
-  stopObserving(fd);
+  stop_observing(fd);
   clients_.erase(it);
-  log.info("Server::disconnectClient(): client disconnected", ClientsCount{ clients_.size() }, processed_frames);
+  log.info("Server::disconnect_client(): client disconnected", Clients_count{ clients_.size() }, processed_frames);
 }
 
 
-void Server::clientIo(int fd)
+void Server::client_io(int fd)
 {
   auto it = clients_.find(fd);
   if(it == end(clients_))
     return;
   auto& h = it->second.handler_;
 
-  h.nonBlockingIo();
-  if( not h.hasWorkToDo() )
-    stopObserving(fd);
+  h.non_blocking_io();
+  if( not h.has_work_to_do() )
+    stop_observing(fd);
 }
 
 
-void Server::startObserving(int fd)
+void Server::start_observing(int fd)
 {
-  epoll_.add( fd, [this](int fd, auto) { this->disconnectClient(fd); }, Epoll::Event::Hup, Epoll::Event::Err );
-  epoll_.add( fd, [this](int fd, auto) { this->clientIo(fd); }, Epoll::Event::Out );
+  epoll_.add( fd, [this](int fd, auto) { this->disconnect_client(fd); }, Epoll::Event::Hup, Epoll::Event::Err );
+  epoll_.add( fd, [this](int fd, auto) { this->client_io(fd); }, Epoll::Event::Out );
 }
 
 
-void Server::stopObserving(int fd)
+void Server::stop_observing(int fd)
 {
   epoll_.remove(fd);
 }

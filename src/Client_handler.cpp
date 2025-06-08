@@ -6,7 +6,7 @@
 
 namespace
 {
-auto topHeaders()
+auto top_headers()
 {
   return
     "HTTP/1.0 200 OK\r\n"
@@ -21,7 +21,7 @@ auto topHeaders()
 }
 
 
-auto preFrameHeaders(JpegPtr const& frame)
+auto pre_frame_headers(JpegPtr const& frame)
 {
   std::stringstream ss;
   ss << "--MjpegServerFrameBoundaryIndicator\r\n"
@@ -32,7 +32,7 @@ auto preFrameHeaders(JpegPtr const& frame)
 }
 
 
-auto postFrameHeaders()
+auto post_frame_headers()
 {
   return
     "\r\n"
@@ -44,46 +44,46 @@ auto postFrameHeaders()
 Client_handler::Client_handler(Logger log, But::System::Descriptor fd):
   log_{ std::move(log) },
   fd_{ std::move(fd) },
-  topHeaders_{ topHeaders() }
+  top_headers_{ top_headers() }
 {
   But::System::makeNonblocking( fd_.get() );
 }
 
 
-void Client_handler::enqueueFrame(JpegPtr frame)
+void Client_handler::enqueue_frame(JpegPtr frame)
 {
-  if(topHeaders_) // no point in enqueuing anything if initial headers are not yet complete
+  if(top_headers_) // no point in enqueuing anything if initial headers are not yet complete
     return;
-  if(postFrameHeaders_) // still sending previosu frame - do not touch anything
+  if(post_frame_headers_) // still sending previosu frame - do not touch anything
     return;
   processed_frames_.count_ += 1u;
   frame_ = std::move(frame);
-  preFrameHeaders_ = preFrameHeaders(frame_);
-  frameRemaingPtr_ = frame_->data_.data();
-  frameRemaingBytes_ = frame_->data_.size();
-  postFrameHeaders_ = postFrameHeaders();
+  pre_frame_headers_ = pre_frame_headers(frame_);
+  frame_remaing_ptr_ = frame_->data_.data();
+  frame_remaing_bytes_ = frame_->data_.size();
+  post_frame_headers_ = post_frame_headers();
 }
 
 
-void Client_handler::nonBlockingIo()
+void Client_handler::non_blocking_io()
 {
-  if(topHeaders_)
-    sendHeaders();
+  if(top_headers_)
+    send_headers();
   else
-    sendFrameData();
+    send_frame_data();
 }
 
 
 namespace
 {
-size_t writeSome(char const* msg, But::System::Descriptor const& fd, void const* data, size_t len)
+size_t write_some(char const* msg, But::System::Descriptor const& fd, void const* data, size_t len)
 {
   auto const ret = write(fd.get(), data, len);
   if(ret == -1)
   {
     if(errno == EWOULDBLOCK)
       return 0;
-    throw std::runtime_error{"Client_handler::writeSome(): error while writing data to client: " + std::string{msg}};
+    throw std::runtime_error{"Client_handler::write_some(): error while writing data to client: " + std::string{msg}};
   }
   assert(ret > 0);
   return ret;
@@ -91,59 +91,59 @@ size_t writeSome(char const* msg, But::System::Descriptor const& fd, void const*
 }
 
 
-void Client_handler::sendHeaders()
+void Client_handler::send_headers()
 {
-  assert(topHeaders_);
-  if( topHeaders_ == topHeaders() )
+  assert(top_headers_);
+  if( top_headers_ == top_headers() )
     log_.info("sending top HTTP headers");
 
-  topHeaders_ += writeSome("writing top headers", fd_, topHeaders_, strlen(topHeaders_));
+  top_headers_ += write_some("writing top headers", fd_, top_headers_, strlen(top_headers_));
 
-  if(*topHeaders_ == 0)
+  if(*top_headers_ == 0)
   {
-    topHeaders_ = nullptr;
+    top_headers_ = nullptr;
     log_.info("top HTTP headers sent successfuly - sending frames from now on");
   }
 }
 
 
-void Client_handler::sendFrameData()
+void Client_handler::send_frame_data()
 {
-  if( not preFrameHeaders_.empty() )
+  if( not pre_frame_headers_.empty() )
   {
-    preFrameHeaders_.erase( 0, writeSome("writing frame pre-headers", fd_, preFrameHeaders_.data(), preFrameHeaders_.size()) );
-    if( not preFrameHeaders_.empty() )
+    pre_frame_headers_.erase( 0, write_some("writing frame pre-headers", fd_, pre_frame_headers_.data(), pre_frame_headers_.size()) );
+    if( not pre_frame_headers_.empty() )
       return;
   }
 
   if(frame_)
   {
-    assert(frameRemaingPtr_);
-    assert(frameRemaingBytes_ > 0);
-    auto const bytes = writeSome("writing frame bytes", fd_, frameRemaingPtr_, frameRemaingBytes_);
-    frameRemaingPtr_ += bytes;
-    frameRemaingBytes_ -= bytes;
-    if(frameRemaingBytes_ > 0)
+    assert(frame_remaing_ptr_);
+    assert(frame_remaing_bytes_ > 0);
+    auto const bytes = write_some("writing frame bytes", fd_, frame_remaing_ptr_, frame_remaing_bytes_);
+    frame_remaing_ptr_ += bytes;
+    frame_remaing_bytes_ -= bytes;
+    if(frame_remaing_bytes_ > 0)
       return;
-    assert(frameRemaingBytes_ == 0);
-    frameRemaingPtr_ = nullptr;
+    assert(frame_remaing_bytes_ == 0);
+    frame_remaing_ptr_ = nullptr;
     frame_.reset();
   }
 
-  if(postFrameHeaders_)
+  if(post_frame_headers_)
   {
-    postFrameHeaders_ += writeSome("writing frame post-headers", fd_, postFrameHeaders_, strlen(postFrameHeaders_));
-    if(*postFrameHeaders_ == 0)
-      postFrameHeaders_ = nullptr;
+    post_frame_headers_ += write_some("writing frame post-headers", fd_, post_frame_headers_, strlen(post_frame_headers_));
+    if(*post_frame_headers_ == 0)
+      post_frame_headers_ = nullptr;
   }
 }
 
 
-bool Client_handler::hasWorkToDo() const
+bool Client_handler::has_work_to_do() const
 {
-  if(topHeaders_) return true;
-  if(not preFrameHeaders_.empty()) return true;
-  if(frameRemaingPtr_) return true;
-  if(postFrameHeaders_) return true;
+  if(top_headers_) return true;
+  if(not pre_frame_headers_.empty()) return true;
+  if(frame_remaing_ptr_) return true;
+  if(post_frame_headers_) return true;
   return false;
 }
