@@ -56,6 +56,7 @@ void Client_handler::enqueueFrame(JpegPtr frame)
     return;
   if(postFrameHeaders_) // still sending previosu frame - do not touch anything
     return;
+  processed_frames_.count_ += 1u;
   frame_ = std::move(frame);
   preFrameHeaders_ = preFrameHeaders(frame_);
   frameRemaingPtr_ = frame_->data_.data();

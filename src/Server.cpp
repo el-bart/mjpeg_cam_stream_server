@@ -152,10 +152,11 @@ void Server::disconnectClient(int const fd)
   auto it = clients_.find(fd);
   if(it == end(clients_))
       return;
+  auto const processed_frames = it->second.handler_.processed_frames();
   auto log = it->second.log_;
   stopObserving(fd);
   clients_.erase(it);
-  log.info("Server::disconnectClient(): client disconnected", ClientsCount{ clients_.size() });
+  log.info("Server::disconnectClient(): client disconnected", ClientsCount{ clients_.size() }, processed_frames);
 }
 
 
