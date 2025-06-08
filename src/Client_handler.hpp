@@ -15,6 +15,7 @@ struct Client_handler final
 
   void enqueueFrame(JpegPtr frame);
   void nonBlockingIo();
+  bool hasWorkToDo() const;
 
   int socket() const { return fd_.get(); }
 

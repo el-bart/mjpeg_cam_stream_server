@@ -136,3 +136,13 @@ void Client_handler::sendFrameData()
       postFrameHeaders_ = nullptr;
   }
 }
+
+
+bool Client_handler::hasWorkToDo() const
+{
+  if(topHeaders_) return true;
+  if(not preFrameHeaders_.empty()) return true;
+  if(frameRemaingPtr_) return true;
+  if(postFrameHeaders_) return true;
+  return false;
+}
