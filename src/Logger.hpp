@@ -1,6 +1,7 @@
 #pragma once
 #include <But/Log/Logger.hpp>
 #include <But/Log/Destination/Console.hpp>
+#include <But/Log/Destination/AutoFlush.hpp>
 #include <But/Log/Field/LogLevel.hpp>
 #include <But/Log/Field/PreciseDateTime.hpp>
 #include <But/Log/Field/ThreadId.hpp>
@@ -72,7 +73,9 @@ private:
 template<typename Dst, typename ...Args>
 auto make_logger(Args&& ...args)
 {
-  return Logger{ But::makeSharedNN<Dst>( std::forward<Args>(args)... ) };
+  auto dst = But::makeSharedNN<Dst>( std::forward<Args>(args)... );
+  auto flushed = But::makeSharedNN<But::Log::Destination::AutoFlush>( std::move(dst) );
+  return Logger{ std::move(flushed) };
 }
 
 inline auto make_console_logger(bool syncWithStdio = true)
