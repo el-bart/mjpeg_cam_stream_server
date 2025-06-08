@@ -8,7 +8,4 @@ struct Ip
 };
 
 constexpr auto fieldName(Ip const*) { return "IP"; }
-inline auto const& fieldValue(Ip const& ip)
-{
-  return ip.value_;
-}
+inline auto const& fieldValue(Ip const& ip) { return ip.value_; }
