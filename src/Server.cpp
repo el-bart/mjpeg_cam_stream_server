@@ -141,6 +141,7 @@ void Server::accept_client()
   {
     Client_context ctx{ ip, log, Client_handler{ log, std::move(client_fd) } };
     clients_.insert( std::make_pair(fd, std::move(ctx)) );
+    clients_count_ = clients_.size();
   }
   start_observing(fd);
   log.info("Server::accept_client(): accepted new client connection", Clients_count{ clients_.size() });
@@ -156,6 +157,7 @@ void Server::disconnect_client(int const fd)
   auto log = it->second.log_;
   stop_observing(fd);
   clients_.erase(it);
+  clients_count_ = clients_.size();
   log.info("Server::disconnect_client(): client disconnected", Clients_count{ clients_.size() }, processed_frames);
 }
 

@@ -31,6 +31,8 @@ struct Server final
 
   /** enqueues new frame. can be called from any thread. */
   void enqueue_frame(JpegPtr frame);
+  /** returns number of currently connected clients. can be called from any thread. */
+  size_t clients_count() const { return clients_count_; }
 
 private:
   void loop();
@@ -50,6 +52,7 @@ private:
   std::atomic_bool quit_{false};
   But::System::Descriptor listen_socket_;
   std::map<int, Client_context> clients_;
+  std::atomic<size_t> clients_count_{0};
   But::System::Epoll epoll_;
   But::Threading::JoiningThread<std::thread> th_;
 };

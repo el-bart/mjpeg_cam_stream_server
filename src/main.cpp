@@ -54,8 +54,25 @@ int main(int argc, char** argv)
     log.info("registered required signal handlers");
 
     log.info("all up - awaiting client connections");
+    auto has_clients = false;
     while(not g_quit)
     {
+      if( s.clients_count() == 0u )
+      {
+        if(has_clients)
+        {
+          log.info("no clients connected - stopping frame grabbing to save CPU cycles");
+          has_clients = false;
+        }
+        // frame capture and processing is actually heavyweight - thus doing nothing, when there are no clients
+        std::this_thread::sleep_for( std::chrono::milliseconds{100} );
+        continue;
+      }
+      if(not has_clients)
+      {
+        log.info("client connected - starting frame grabbing again");
+        has_clients = true;
+      }
       auto f = c.capture();
       s.enqueue_frame(f);
     }
