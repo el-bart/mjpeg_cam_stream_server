@@ -7,15 +7,17 @@
 using But::System::Epoll;
 using But::System::Descriptor;
 
-constexpr auto fieldName(Server::Client_context const*) { return "Client_context"; }
-auto objectValue(Logger::EntryProxy& p, Server::Client_context const& ctx)
-{
-  p.value("ip", ctx.ip_);
-}
-
 
 namespace
 {
+struct ClientsCount
+{
+  size_t value_{};
+};
+constexpr auto fieldName(ClientsCount const*) { return "ClientsCount"; }
+inline auto fieldValue(ClientsCount const& cc) { return cc.value_; }
+
+
 auto createServer(Server_config const& sc)
 {
   auto fd = Descriptor{ socket(AF_INET, SOCK_STREAM, 0) };
@@ -88,32 +90,18 @@ void Server::loopOnce()
 }
 
 
-void Server::removeDeadClients()
-{
-  auto constexpr isDead = [](auto& c) { return c.handler_.lock() == nullptr; };
-  auto newEnd = std::remove_if( begin(clients_), end(clients_), isDead );
-  clients_.erase( newEnd, end(clients_) );
-}
-
-
 void Server::enqueueNewFrame()
 {
   auto f = nextFrame();
   if(not f)
     return;
 
-  auto hasDeadClients = false;
-  for(auto& ctx: clients_)
-    if(auto c = ctx.handler_.lock(); c)
-      c->enqueueFrame(f);
-    else
-    {
-      hasDeadClients = true;
-      log_.info("client disconnected", ctx);
-    }
-
-  if(hasDeadClients)
-    removeDeadClients();
+  for(auto& cp: clients_)
+  {
+    cp.second.handler_.enqueueFrame(f);
+    stopObserving(cp.first);
+    startObserving(cp.first);
+  }
 }
 
 
@@ -129,13 +117,13 @@ JpegPtr Server::nextFrame()
 
 namespace
 {
-std::string clientIp(sockaddr_in const &client_addr)
+auto clientIp(sockaddr_in const &client_addr)
 {
   char client_ip[INET_ADDRSTRLEN];
   auto *addr_in = (struct sockaddr_in *)&client_addr;
   if( inet_ntop(AF_INET, &(addr_in->sin_addr), client_ip, INET_ADDRSTRLEN) == nullptr )
     throw std::runtime_error{"Server: clientIp(): failed to get client IP"};
-  return client_ip;
+  return Ip{client_ip};
 }
 }
 
@@ -147,24 +135,51 @@ void Server::acceptClient()
   Descriptor client_fd{ accept(listenSocket_.get(), (struct sockaddr *)&client_addr, &size) };
   if(not client_fd)
     throw std::runtime_error{"Server::acceptClient(): accept() failed"};
-  Client_context ctx{ clientIp(client_addr), {} };
-  auto csp = std::make_shared<Client_handler>( log_.withFields(ctx), std::move(client_fd) );
-  ctx.handler_ = csp;
-  clients_.push_back( std::move(ctx) );
-
-  epoll_.add( csp->socket(), [this](int fd, auto) { this->disconnectClient(fd); }, Epoll::Event::Hup, Epoll::Event::Err );
-  epoll_.add( csp->socket(), [csp](int, auto) { csp->nonBlockingIo(); }, Epoll::Event::Out );
-
-  log_.info("Server::acceptClient(): accepted new client connection", clients_.back());
+  auto const fd = client_fd.get();
+  auto const ip = clientIp(client_addr);
+  auto log = log_.withFields(ip);
+  {
+    Client_context ctx{ ip, log, Client_handler{ log, std::move(client_fd) } };
+    clients_.insert( std::make_pair(fd, std::move(ctx)) );
+  }
+  startObserving(fd);
+  log.info("Server::acceptClient(): accepted new client connection", ClientsCount{ clients_.size() });
 }
 
 
 void Server::disconnectClient(int const fd)
 {
-  this->epoll_.remove(fd);
+  auto it = clients_.find(fd);
+  if(it == end(clients_))
+      return;
+  auto log = it->second.log_;
+  stopObserving(fd);
+  clients_.erase(it);
+  log.info("Server::disconnectClient(): client disconnected", ClientsCount{ clients_.size() });
+}
 
-  for(auto& ctx: clients_)
-    if(auto c = ctx.handler_.lock(); not c)
-      log_.info("client disconnected", ctx);
-  removeDeadClients();
+
+void Server::clientIo(int fd)
+{
+  auto it = clients_.find(fd);
+  if(it == end(clients_))
+    return;
+  auto& h = it->second.handler_;
+
+  h.nonBlockingIo();
+  if( not h.hasWorkToDo() )
+    stopObserving(fd);
+}
+
+
+void Server::startObserving(int fd)
+{
+  epoll_.add( fd, [this](int fd, auto) { this->disconnectClient(fd); }, Epoll::Event::Hup, Epoll::Event::Err );
+  epoll_.add( fd, [this](int fd, auto) { this->clientIo(fd); }, Epoll::Event::Out );
+}
+
+
+void Server::stopObserving(int fd)
+{
+  epoll_.remove(fd);
 }
