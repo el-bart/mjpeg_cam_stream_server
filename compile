@@ -1,0 +1,10 @@
+#!/bin/bash
+set -eu -o pipefail
+app_dir=$(dirname "$(readlink -e "$0")")
+dir=build/release
+
+cd "$app_dir"
+mkdir -p "$dir"
+./sdk cmake -B "$dir" -G Ninja -DCMAKE_BUILD_TYPE=Release src/
+./sdk ninja -C "$dir"
+ls -alh "$dir/mjpeg_cam_stream_server"

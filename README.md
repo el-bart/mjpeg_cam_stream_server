@@ -10,7 +10,12 @@ most of the tested solutions were introducing at least a couple of seconds, whic
 
 ## building
 
-run SDK with:
+TL;DR:
+```
+./compile
+```
+
+if you want to do some more work manually, run SDK interactively with:
 ```
 ./sdk
 ```
