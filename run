@@ -12,7 +12,8 @@ fi
 
 flags+=(--rm)
 flags+=(--publish 8080:8080)
-flags+=(--user "$(id -u):$(id -g)")
+flags+=(--user "nobody:nogroup")
+flags+=(--read-only)
 
 shopt -s nullglob
 for dev in /dev/video*
