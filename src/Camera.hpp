@@ -2,12 +2,15 @@
 #include "program_options.hpp"
 #include "Jpeg.hpp"
 #include "Logger.hpp"
+#include <But/Exception.hpp>
 #include <But/System/Descriptor.hpp>
 #include <vector>
 
 struct Camera final
 {
+  BUT_DEFINE_EXCEPTION(Error, But::Exception, "Camera error");
   Camera(Logger log, Camera_config const& cfg);
+  ~Camera();
 
   Camera(Camera&&) = default;
   Camera& operator=(Camera&&) = default;
@@ -21,7 +24,7 @@ struct Camera final
 private:
   struct Mmap_buf
   {
-    Mmap_buf(size_t size, uint32_t offset);
+    Mmap_buf(But::System::Descriptor const& fd, size_t size, uint32_t offset);
     ~Mmap_buf() { close(); }
     Mmap_buf(Mmap_buf const&) = delete;
     Mmap_buf& operator=(Mmap_buf const&) = delete;
@@ -35,6 +38,6 @@ private:
   };
 
   Logger log_;
-  But::System::Descriptor dev_;
+  But::System::Descriptor fd_;
   std::vector<Mmap_buf> buffers_;
 };
