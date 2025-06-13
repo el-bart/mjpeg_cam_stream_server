@@ -20,10 +20,6 @@ endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-add_executable(show_camera_feed mtest/show_camera_feed.cpp)
-add_executable(write_to_jpeg mtest/write_to_jpeg.cpp)
-add_executable(check_resolutions mtest/check_resolutions.cpp)
-
 add_library(common
   Camera.cpp
   Client_handler.cpp
