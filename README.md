@@ -2,7 +2,9 @@
 
 just another Motion-JPEG streaming server.
 it's written in C++ and aim at supporting many clients effortlessly.
-the main CPU usage is due to camera frame capture and barely moves with more clients connecting.
+CPU usage barely moves for multiple clients.
+Raspberry Pi 4 with 3 parallel clients to fulll FD camera uses about 5% of the CPU and 12MB of RAM.
+on top of this, when no clients are connected, frame capturing is completly disabled.
 
 the main purpose was to provide an easy to integrate stream service for LAN networks, with virtual no latency.
 most of the tested solutions were introducing at least a couple of seconds, which was a no-go for my use case.
