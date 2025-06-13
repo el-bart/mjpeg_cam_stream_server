@@ -12,9 +12,6 @@ RUN apt-get update && apt-get install -y \
     vim
 
 RUN apt-get update && apt-get install -y \
-    libopencv-dev
-
-RUN apt-get update && apt-get install -y \
     libboost-program-options-dev
 
 # BUT installation
