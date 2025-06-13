@@ -1,10 +1,12 @@
 #include "Camera.hpp"
-#include <sstream>
+#include <sys/mman.h>
 
 Camera::Camera(Logger log, Camera_config const& cfg):
-  log_{ std::move(log) },
-  dev_{cfg.video_device_}
+  log_{ std::move(log) }//,
+  //dev_{cfg.video_device_}
 {
+  (void)cfg;
+  /*
     if( not dev_.isOpened() )
       throw std::runtime_error{"Camera: failed to open device: " + cfg.video_device_.string()};
     dev_.set(cv::CAP_PROP_FOURCC, cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
@@ -20,29 +22,46 @@ Camera::Camera(Logger log, Camera_config const& cfg):
       ss << "instead got " << x << "x" << y;
       throw std::runtime_error{ ss.str() };
     }
+    */
 }
 
-
-namespace
-{
-auto to_jpeg(cv::Mat& frame, std::vector<int> const& params)
-{
-  // ensure correct encoding
-  if (frame.type() != CV_8UC3)
-  {
-    cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB); // RGB
-    frame.convertTo(frame, CV_8UC3); // 8-bit channels
-  }
-
-  auto jpeg = std::make_shared<Jpeg>();
-  cv::imencode(".jpg", frame, jpeg->data_, params);
-  return jpeg;
-}
-}
 
 JpegPtr Camera::capture()
 {
+  throw 42;
+  /*
   if( not dev_.read(buffer_) )
     throw std::runtime_error{"Camera::capture(): failed to capture frame"};
   return to_jpeg(buffer_, params_);
+  */
 }
+
+Camera::Mmap_buf::Mmap_buf(size_t size, uint32_t offset)
+{
+  (void)size;
+  (void)offset;
+}
+
+Camera::Mmap_buf::Mmap_buf(Mmap_buf && other):
+  size_{ std::exchange(other.size_, 0) },
+  ptr_{ std::exchange(other.ptr_, nullptr) }
+{
+}
+
+Camera::Mmap_buf& Camera::Mmap_buf::operator=(Mmap_buf &&other)
+{
+  close();
+  size_ = std::exchange(other.size_, 0);
+  ptr_ = std::exchange(other.ptr_, nullptr);
+  return *this;
+}
+
+void Camera::Mmap_buf::close() noexcept
+{
+  if(not ptr_)
+    return;
+  munmap(ptr_, size_);
+}
+
+//  size_t size_{0};
+//  void *ptr_{nullptr};

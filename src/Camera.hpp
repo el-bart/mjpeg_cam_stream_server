@@ -2,8 +2,8 @@
 #include "program_options.hpp"
 #include "Jpeg.hpp"
 #include "Logger.hpp"
-#include <memory>
-#include <opencv2/opencv.hpp>
+#include <But/System/Descriptor.hpp>
+#include <vector>
 
 struct Camera final
 {
@@ -19,8 +19,22 @@ struct Camera final
   JpegPtr capture();
 
 private:
+  struct Mmap_buf
+  {
+    Mmap_buf(size_t size, uint32_t offset);
+    ~Mmap_buf() { close(); }
+    Mmap_buf(Mmap_buf const&) = delete;
+    Mmap_buf& operator=(Mmap_buf const&) = delete;
+    Mmap_buf(Mmap_buf &&);
+    Mmap_buf& operator=(Mmap_buf &&);
+
+    void close() noexcept;
+
+    size_t size_{0};
+    void *ptr_{nullptr};
+  };
+
   Logger log_;
-  cv::VideoCapture dev_;
-  cv::Mat buffer_;
-  std::vector<int> const params_{cv::IMWRITE_JPEG_QUALITY, 90}; // JPEG quality
+  But::System::Descriptor dev_;
+  std::vector<Mmap_buf> buffers_;
 };

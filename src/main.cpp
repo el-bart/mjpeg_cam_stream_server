@@ -4,8 +4,8 @@
 #include "Logger.hpp"
 #include <string>
 #include <atomic>
+#include <iostream>
 #include <signal.h>
-#include <opencv2/core/utils/logger.hpp>
 
 namespace
 {
@@ -39,9 +39,6 @@ int main(int argc, char** argv)
       return 2;
     }
     log.info("configuration used by application", po.camera_config_, po.server_config_);
-
-    cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
-    log.warning("silenced OpenCV logs output to prevent spamming stdout");
 
     Server s{log, po.server_config_};
     log.info("server initialized", po.server_config_);
